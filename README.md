@@ -3,7 +3,6 @@
 ## Overview 
 This repository contains code and resources for automatically mapping coastal upwelling events off the California coast. The approach uses MODIS Sea Surface Temperature data and a modified topographic position index algorithm to detect and segment areas of significantly colder water, indicating upwelling events.
 
-Upwelling Animation:
 ![](https://github.com/brianvamaro/upwelling-mapping/blob/main/Animations/SST-TPI-Animation.gif)
 
 

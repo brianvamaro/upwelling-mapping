@@ -1,0 +1,128 @@
+---
+title: "Upwelling Mapping Figures"
+output: html_document
+date: "2023-03-12"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(jsonlite)
+```
+
+```{r}
+df = read.csv("results.csv")
+```
+
+## Data Cleaning
+```{r}
+dfc <- df %>% 
+  select(., - X) %>% 
+  mutate(area_diff = area_naive - area_tpi,
+         sst_overall_naive_diff = sst_mean_overall - sst_mean_upwelling_naive,
+         start_date = substr(as.character(time_range), 1, 8),
+         end_date = substr(as.character(time_range), 9, 16),
+         num_pixels_naive = area_naive / 4.6^2,
+         num_pixels_tpi = area_tpi / 4.6^2
+         ) %>% 
+  drop_na() %>% 
+  mutate(
+    start_date = paste(substr(start_date,1,4),substr(start_date,5,6),substr(start_date,7,8),sep = "-"),
+    end_date = paste(substr(end_date,1,4),substr(end_date,5,6),substr(end_date,7,8),sep = "-")
+  )
+
+  
+head(dfc)
+```
+
+## Visualizing some distribution ideas
+```{r}
+plot(dfc$area_tpi, dfc$area_naive)
+
+plot(dfc$sst_mean_overall - dfc$sst_mean_upwelling_naive)
+
+plot(dfc$chl_mean_overall - dfc$chl_mean_upwelling_tpi)
+
+plot(dfc$sst_mean_upwelling_tpi)
+
+plot(dfc$area_tpi)
+
+plot(dfc$area_naive)
+```
+## Creating label functions
+```{r}
+everysecond <- function(x){
+  vals <- x
+  vals[seq(1, length(x))] <- ""
+  vals[seq(1, length(vals), 25)] <- x[seq(23, length(x), 25)]
+  return(vals)
+}
+
+everyjanjul<- function(x){
+  for (i in seq(1,length(x))) {
+    if (!((str_detect(x[i],"-01-01")) | (str_detect(x[i],"-07-03")) | (str_detect(x[i],"-07-04")))) {
+      x[i] <- ""
+    }
+  }
+  return(x)
+}
+
+```
+
+
+## Sea Surface Temperature over time graph for each method
+```{r}
+colors <- c("Baseline"="#FE9920","TPI"="#566e3d","Naive"="#0C4767")
+
+
+ggplot(dfc, aes(x=start_date)) +
+  geom_col(aes(y = sst_mean_overall, fill="Baseline"),alpha = 0.8, width=1) +
+  geom_col(aes(y = sst_mean_upwelling_tpi, fill = "TPI"), alpha=1, width=1) +
+  geom_col(aes(y = sst_mean_upwelling_naive, fill = "Naive"), alpha=0.7, width=1) +
+  scale_fill_manual(name="Zone",values=colors) +
+  scale_x_discrete(labels = everyjanjul(dfc$start_date)) +
+  labs(x = "Time (8 day)",
+       y = "Average Sea Surface Temperature (°C)",
+       title = "Sea Surface Temperature in Upwelling Zones Over Time"
+  ) + 
+  coord_cartesian(ylim = c(5, 20)) +
+  theme_classic() + 
+  theme(axis.text.x=element_text(angle = 70, vjust = 0.5, hjust=0.4),
+        axis.ticks.x=element_blank())
+
+```
+
+## clorophylla concentration over time for each method
+```{r}
+ggplot(dfc, aes(x = year)) +
+  geom_col(aes(y = chl_mean_upwelling_tpi, fill="TPI"), alpha=1,  width=0.8) +
+  geom_col(aes(x = year, y = chl_mean_upwelling_naive, fill="Naive"), alpha=0.8, width=0.8) +
+  geom_col(aes(x = year, y = chl_mean_overall, fill="Baseline"), alpha=1, width=0.8) +
+  scale_fill_manual(name="Zone",values=colors) +
+  labs(x = "Year",
+       y = expression(paste("Average Chlorophyll-a Concentration (mg m"^"-3",")")),
+       title = "Chlorophyll-a Concentration in Upwelling Zones Over Time"
+  ) + 
+  theme_minimal()
+```
+
+## Area over time for each method
+```{r}
+ggplot(dfc, aes(x=start_date)) +
+  geom_col(aes(y = num_pixels_tpi, fill = "TPI"), alpha=1, width=1) +
+  geom_col(aes(y = num_pixels_naive, fill = "Naive"), alpha=0.7, width=1) +
+  scale_fill_manual(name="Method",values=colors) +
+  scale_x_discrete(labels = everyjanjul(dfc$start_date)) +
+  labs(x = "Time (8 day)",
+       y = "Area (pixels)",
+       title = "Area of Upwelling Zones Over Time"
+  ) + 
+  #coord_cartesian(ylim = c(0, 250000)) +
+  theme_classic() + 
+  theme(axis.text.x=element_text(angle = 70, vjust = 0.5, hjust=0.4),
+        axis.ticks.x=element_blank())
+```
+
